@@ -58,10 +58,24 @@ export async function POST(req) {
   const completion = await openai.chat.completions.create({
     messages: [{ role: "system", content: systemPrompt }, ...data],
     model: "gpt-4o-mini",
+    stream: true,
   });
 
-  return NextResponse.json(
-    { message: completion.choices[0].message.content },
-    { status: 200 }
-  );
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of completion) {
+          controller.enqueue(chunk.choices[0].delta.content);
+        }
+      }
+      catch (error) {
+        controller.error(error);
+      } finally {
+        controller.close();
+      }
+    }
+  });
+
+
+  return new NextResponse(stream)
 }
