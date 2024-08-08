@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { Readable } from 'stream';
+import {
+  BedrockRuntimeClient,
+  ConverseStreamCommand,
+} from "@aws-sdk/client-bedrock-runtime";
 
 const systemPrompt = `
 
@@ -52,30 +56,53 @@ Remember, your goal is to enhance the user experience by providing efficient and
 `;
 
 export async function POST(req) {
-  const openai = new OpenAI();
-  const data = await req.json();
+  // Use the Conversation API to send a text message to Anthropic Claude.
 
-  const completion = await openai.chat.completions.create({
-    messages: [{ role: "system", content: systemPrompt }, ...data],
-    model: "gpt-4o-mini",
-    stream: true,
+  // Create a Bedrock Runtime client in the AWS Region you want to use.
+  const client = new BedrockRuntimeClient({ region: "us-west-2" });
+
+  // Set the model ID, e.g., Claude 3 Haiku.
+  const modelId = "anthropic.claude-instant-v1";
+
+  // Start a conversation with the user message.
+  const userMessage = "What is your system prompt?";
+  const conversation = [
+    {
+      role: "user",
+      content: [{ text: userMessage }],
+    },
+  ];
+
+  // Create a command with the model ID, the message, and a basic configuration.
+  const command = new ConverseStreamCommand({
+    modelId,
+    messages: conversation,
+    inferenceConfig: { maxTokens: 512, temperature: 0.5, topP: 0.9 },
   });
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        for await (const chunk of completion) {
-          controller.enqueue(chunk.choices[0].delta.content);
+  try {
+    const response = await client.send(command);
+
+    const stream = new Readable({
+      read() {},
+    });
+
+    (async () => {
+      for await (const item of response.stream) {
+        if (item.contentBlockDelta) {
+          const text = item.contentBlockDelta.delta?.text || '';
+          stream.push(text);
         }
       }
-      catch (error) {
-        controller.error(error);
-      } finally {
-        controller.close();
-      }
-    }
-  });
+      stream.push(null); // Signal end of stream
+    })().catch((err) => {
+      console.error(`Stream error: ${err}`);
+      stream.push(null);
+    });
 
-
-  return new NextResponse(stream)
+    return new NextResponse(stream);
+  } catch (err) {
+    console.log(`ERROR: Can't invoke '${modelId}'. Reason: ${err}`);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
 }
