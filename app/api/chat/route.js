@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Readable } from 'stream';
+import { Readable } from "stream";
 import {
   BedrockRuntimeClient,
   ConverseStreamCommand,
@@ -56,29 +56,32 @@ Remember, your goal is to enhance the user experience by providing efficient and
 `;
 
 export async function POST(req) {
-  // Use the Conversation API to send a text message to Anthropic Claude.
-
-  // Create a Bedrock Runtime client in the AWS Region you want to use.
   const client = new BedrockRuntimeClient({ region: "us-west-2" });
-
-  // Set the model ID, e.g., Claude 3 Haiku.
   const modelId = "anthropic.claude-instant-v1";
 
-  // Start a conversation with the user message.
-  const userMessage = "What is your system prompt?";
-  const conversation = [
-    {
-      role: "user",
-      content: [{ text: userMessage }],
-    },
-  ];
+  const data = await req.json();
 
-  // Create a command with the model ID, the message, and a basic configuration.
-  const command = new ConverseStreamCommand({
-    modelId,
-    messages: conversation,
-    inferenceConfig: { maxTokens: 512, temperature: 0.5, topP: 0.9 },
-  });
+  const input = {
+    // ConverseStreamRequest
+    modelId: modelId, // required
+    messages: data,
+    system: [
+      // SystemContentBlocks
+      {
+        // SystemContentBlock Union: only one key present
+        text: systemPrompt,
+      },
+    ],
+    inferenceConfig: {
+      // InferenceConfiguration
+      maxTokens: Number(200),
+      temperature: Number(0.7),
+      topP: Number(0.9),
+    },
+  };
+
+  const command = new ConverseStreamCommand(input);
+  const response = await client.send(command);
 
   try {
     const response = await client.send(command);
@@ -90,7 +93,7 @@ export async function POST(req) {
     (async () => {
       for await (const item of response.stream) {
         if (item.contentBlockDelta) {
-          const text = item.contentBlockDelta.delta?.text || '';
+          const text = item.contentBlockDelta.delta?.text || "";
           stream.push(text);
         }
       }
@@ -103,6 +106,6 @@ export async function POST(req) {
     return new NextResponse(stream);
   } catch (err) {
     console.log(`ERROR: Can't invoke '${modelId}'. Reason: ${err}`);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

@@ -5,25 +5,33 @@ import { useState } from "react";
 
 export default function Home() {
   const [messages, setMessages] = useState([
+    {role: "user", content: [{text: "Hello :)"}]},
     {
       role: "assistant",
-      content:
-        "Hello, I'm the Headstarter support assistant. How can I help you?",
+      content: [
+        {
+          text: "Hello, I'm the Headstarter support assistant. How can I help you?",
+        },
+      ],
     },
   ]);
 
   const [message, setMessage] = useState("");
 
   const sendMessage = async () => {
-    setMessage('');
-    setMessages( (messages) => [...messages, { role: "user", content: message}, {role: "assistant", content: ""}]);
+    setMessage("");
+    setMessages((messages) => [
+      ...messages,
+      { role: "user", content: [{text: message}] },
+      { role: "assistant", content: [{text:""}] },
+    ]);
     const response = fetch("/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify([...messages, { role: "user", content: message }]),
-    }).then( async (res) => {
+      body: JSON.stringify([...messages, { role: "user", content: [{text: message}] }]),
+    }).then(async (res) => {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -31,16 +39,20 @@ export default function Home() {
         if (done) {
           return buffer;
         }
-        const text =  decoder.decode(value || new Uint8Array(), { stream: true });
-        setMessages( (messages) => {
+        const newText = decoder.decode(value || new Uint8Array(), {
+          stream: true,
+        });
+        setMessages((messages) => {
           let lastMessage = messages[messages.length - 1];
           let otherMessages = messages.slice(0, messages.length - 1);
-          return [...otherMessages, {...lastMessage, content: lastMessage.content + text}];
+          return [
+            ...otherMessages,
+            { ...lastMessage, content: [{text: lastMessage.content[0].text + newText}] },
+          ];
         });
-        return reader.read().then(processText);   
+        return reader.read().then(processText);
       });
     });
-    
   };
 
   return (
@@ -53,14 +65,20 @@ export default function Home() {
       alignItems="center"
     >
       <Stack
-        direction='column'
+        direction="column"
         width="500px"
         height="600px"
         border="1px solid black"
         p={2}
         spacing={3}
       >
-        <Stack direction={"column"} spacing={2} flexGrow={1} overflow={"auto"} maxHeight="100%">
+        <Stack
+          direction={"column"}
+          spacing={2}
+          flexGrow={1}
+          overflow={"auto"}
+          maxHeight="100%"
+        >
           {messages.map((message, index) => (
             <Box
               key={index}
@@ -71,13 +89,15 @@ export default function Home() {
             >
               <Box
                 bgcolor={
-                  message.role === "assistant" ? "primary.main" : "secondary.main"
+                  message.role === "assistant"
+                    ? "primary.main"
+                    : "secondary.main"
                 }
                 color="white"
                 borderRadius={16}
                 p={3}
               >
-                {message.content}
+                {message.content[0].text}
               </Box>
             </Box>
           ))}
@@ -89,7 +109,9 @@ export default function Home() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          <Button variant="contained" onClick={sendMessage}>Send</Button>
+          <Button variant="contained" onClick={sendMessage}>
+            Send
+          </Button>
         </Stack>
       </Stack>
     </Box>
