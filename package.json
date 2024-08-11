@@ -11,8 +11,10 @@
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^0.0.12",
     "@aws-sdk/client-bedrock": "^3.624.0",
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.625.0",
     "@aws-sdk/client-bedrock-runtime": "^3.624.0",
     "@aws-sdk/client-s3": "^3.626.0",
+    "@aws-sdk/client-secrets-manager": "^3.624.0",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@mui/material": "^5.16.6",

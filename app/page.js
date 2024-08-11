@@ -10,7 +10,7 @@ export default function Home() {
       role: "assistant",
       content: [
         {
-          text: "Hello, I'm the Headstarter support assistant. How can I help you?",
+          text: "Hello, I'm the Huntington Beach Public Library assistant. How can I help you?",
         },
       ],
     },

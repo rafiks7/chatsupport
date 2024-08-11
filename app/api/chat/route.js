@@ -1,59 +1,70 @@
 import { NextResponse } from "next/server";
 import { Readable } from "stream";
-import {
-  BedrockRuntimeClient,
-  ConverseStreamCommand,
-} from "@aws-sdk/client-bedrock-runtime";
+import { BedrockRuntimeClient, ConverseStreamCommand } from "@aws-sdk/client-bedrock-runtime";
+import { BedrockAgentRuntimeClient, RetrieveAndGenerateCommand } from '@aws-sdk/client-bedrock-agent-runtime';
+import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
-const systemPrompt = `
+/*
+// secret fetching from aws
+const secretsManagerClient = new SecretsManagerClient({ region: 'us-west-2' });
 
-Sure! Here's a system prompt for a customer support AI for Headstarter:
+// Function to retrieve a secret from AWS Secrets Manager
+async function getSecret(secretName) {
+  try {
+      const command = new GetSecretValueCommand({ SecretId: secretName });
+      const response = await secretsManagerClient.send(command);
+      const secret = response.SecretString;
+      if (secret) {
+          return JSON.parse(secret);
+      } else {
+          throw new Error('Secret string is empty');
+      }
+  } catch (error) {
+      console.error(`Error retrieving secret: ${error}`);
+      throw error;
+  }
+}
+const secretArn = 'andrew/bedrock/pinecone'; // Replace with your secret name
 
-System Prompt for Customer Support AI:
 
-Welcome to Headstarter's Customer Support AI! Our mission is to provide top-notch assistance to users preparing for technical interviews through our platform, which offers mock technical interviews powered by AI. As a customer support AI, your role is to ensure users have a smooth and beneficial experience. Below are key guidelines to follow while interacting with users:
+// bedrock agent declaration
+const bedrockAgentRuntimeclient = new BedrockAgentRuntimeClient({ region: 'us-west-2' });
 
-Greet Users Warmly:
+const systemPrompt = `You are a helpful support chatbot for the Huntington Beach Public Library system. Maintain a friendly and professional manner when interacting.`;
 
-Begin each interaction with a friendly greeting and introduce yourself as Headstarter's support assistant.
-Understand and Address User Needs:
+async function getContext(query) {
+  try {
+      const secrets = await getSecret(secretArn);
+      const modelArn = secrets.modelArn;
+      const kbId = secrets.kb_id;
 
-Listen attentively to user queries.
-Ask clarifying questions if needed to fully understand their issues.
-Provide clear, concise, and accurate responses.
-Technical Assistance:
+      const params = {
+          input: {
+              text: query,
+          },
+          retrieveAndGenerateConfiguration: {
+              type: 'KNOWLEDGE_BASE',
+              knowledgeBaseConfiguration: {
+                  knowledgeBaseId: kbId,
+                  modelArn: modelArn,
+              }
+          }
+      };
 
-Help users navigate the platform.
-Assist with technical issues related to accessing and using mock interviews.
-Guide users through troubleshooting steps for common problems (e.g., login issues, interview session errors).
-Interview Preparation Guidance:
-
-Offer tips on how to effectively use Headstarter’s resources for interview preparation.
-Provide information on the different types of technical interviews available on the platform.
-Encourage users to make the most of the mock interview sessions and review feedback thoroughly.
-Account and Subscription Management:
-
-Assist users with account-related inquiries (e.g., password reset, updating profile information).
-Provide information on subscription plans and help with billing issues.
-Address any concerns regarding subscription cancellations or refunds.
-Feedback and Improvement:
-
-Encourage users to provide feedback on their experience with the platform.
-Report common issues and user feedback to the development team for continuous improvement.
-Maintain a Positive and Supportive Tone:
-
-Stay patient and empathetic, even when dealing with frustrated users.
-Reinforce the value of Headstarter’s services and motivate users to keep improving their technical skills.
-Data Privacy and Security:
-
-Ensure users’ personal information is handled with confidentiality.
-Adhere to Headstarter’s data privacy policies in all interactions.
-Escalation:
-
-Recognize when an issue is beyond your capability and escalate it to a human support representative promptly.
-Provide the user with an estimated timeframe for resolution if escalation is necessary.
-Remember, your goal is to enhance the user experience by providing efficient and supportive assistance. By following these guidelines, you'll help users navigate Headstarter’s platform seamlessly and achieve their interview preparation goals.
-`;
+      const command = new RetrieveAndGenerateCommand(params);
+      const response = await bedrockAgentRuntimeclient.send(command);
+      if (response.output && response.output.text) {
+          return response.output.text;
+      } else {
+          throw new Error('Response is missing output text');
+      }
+  } catch (error) {
+      console.error('Error retrieving context:', error);
+      throw error;
+  }
+}
+  */
+const systemPrompt = `You are a helpful support chatbot for the Huntington Beach Public Library system. Maintain a friendly and professional manner when interacting.`;
 
 export async function POST(req) {
   const client = new BedrockRuntimeClient({ region: "us-west-2" });
@@ -81,7 +92,6 @@ export async function POST(req) {
   };
 
   const command = new ConverseStreamCommand(input);
-  const response = await client.send(command);
 
   try {
     const response = await client.send(command);
