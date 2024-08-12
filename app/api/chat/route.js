@@ -4,9 +4,10 @@ import { BedrockRuntimeClient, ConverseStreamCommand } from "@aws-sdk/client-bed
 import { BedrockAgentRuntimeClient, RetrieveAndGenerateCommand } from '@aws-sdk/client-bedrock-agent-runtime';
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
-/*
+
 // secret fetching from aws
 const secretsManagerClient = new SecretsManagerClient({ region: 'us-west-2' });
+const secretArn = 'arn:aws:secretsmanager:us-west-2:026090520251:secret:andrew/bedrock/pinecone-EKC6nR';
 
 // Function to retrieve a secret from AWS Secrets Manager
 async function getSecret(secretName) {
@@ -24,98 +25,93 @@ async function getSecret(secretName) {
       throw error;
   }
 }
-const secretArn = 'andrew/bedrock/pinecone'; // Replace with your secret name
-
-
-// bedrock agent declaration
+  
+const systemPrompt = `You are a helpful support chatbot for the Huntington Beach Public Library system. Maintain a friendly and professional manner when interacting.`;
 const bedrockAgentRuntimeclient = new BedrockAgentRuntimeClient({ region: 'us-west-2' });
 
-const systemPrompt = `You are a helpful support chatbot for the Huntington Beach Public Library system. Maintain a friendly and professional manner when interacting.`;
-
-async function getContext(query) {
+export async function POST(req) {
   try {
-      const secrets = await getSecret(secretArn);
-      const modelArn = secrets.modelArn;
-      const kbId = secrets.kb_id;
+    const secrets = await getSecret(secretArn);
+    const modelArn = secrets.modelArn;
+    const kbId = secrets.kb_id;
 
-      const params = {
-          input: {
-              text: query,
-          },
-          retrieveAndGenerateConfiguration: {
-              type: 'KNOWLEDGE_BASE',
-              knowledgeBaseConfiguration: {
-                  knowledgeBaseId: kbId,
-                  modelArn: modelArn,
-              }
+    const params = {
+      systemPrompt: systemPrompt,
+      input: {
+          text: req,
+      },
+      retrieveAndGenerateConfiguration: {
+          type: 'KNOWLEDGE_BASE',
+          knowledgeBaseConfiguration: {
+              knowledgeBaseId: kbId,
+              modelArn: modelArn,
           }
-      };
-
-      const command = new RetrieveAndGenerateCommand(params);
-      const response = await bedrockAgentRuntimeclient.send(command);
-      if (response.output && response.output.text) {
-          return response.output.text;
-      } else {
-          throw new Error('Response is missing output text');
       }
+    };
+
+    const command = new RetrieveAndGenerateCommand(params);
+    const response = await bedrockAgentRuntimeclient.send(command);
+    if (response.output && response.output.text) {
+        return new NextResponse.json(response.output.text);
+    } else {
+        throw new Error('Response is missing output text');
+    }
   } catch (error) {
       console.error('Error retrieving context:', error);
       throw error;
   }
 }
-  */
-const systemPrompt = `You are a helpful support chatbot for the Huntington Beach Public Library system. Maintain a friendly and professional manner when interacting.`;
 
-export async function POST(req) {
-  const client = new BedrockRuntimeClient({ region: "us-west-2" });
-  const modelId = "anthropic.claude-instant-v1";
+//   const client = new BedrockRuntimeClient({ region: "us-west-2" });
+//   const modelId = "anthropic.claude-instant-v1";
 
-  const data = await req.json();
+//   const data = await req.json();
 
-  const input = {
-    // ConverseStreamRequest
-    modelId: modelId, // required
-    messages: data,
-    system: [
-      // SystemContentBlocks
-      {
-        // SystemContentBlock Union: only one key present
-        text: systemPrompt,
-      },
-    ],
-    inferenceConfig: {
-      // InferenceConfiguration
-      maxTokens: Number(200),
-      temperature: Number(0.7),
-      topP: Number(0.9),
-    },
-  };
+//   const input = {
+//     // ConverseStreamRequest
+//     modelId: modelId, // required
+//     messages: data,
+//     system: [
+//       // SystemContentBlocks
+//       {
+//         // SystemContentBlock Union: only one key present
+//         text: systemPrompt,
+//       },
+      
+//     ],
+//     inferenceConfig: {
+//       // InferenceConfiguration
+//       maxTokens: Number(200),
+//       temperature: Number(0.7),
+//       topP: Number(0.9),
+//     },
+//   };
 
-  const command = new ConverseStreamCommand(input);
+//   const command = new ConverseStreamCommand(input);
 
-  try {
-    const response = await client.send(command);
+//   try {
+//     const response = await client.send(command);
 
-    const stream = new Readable({
-      read() {},
-    });
+//     const stream = new Readable({
+//       read() {},
+//     });
 
-    (async () => {
-      for await (const item of response.stream) {
-        if (item.contentBlockDelta) {
-          const text = item.contentBlockDelta.delta?.text || "";
-          stream.push(text);
-        }
-      }
-      stream.push(null); // Signal end of stream
-    })().catch((err) => {
-      console.error(`Stream error: ${err}`);
-      stream.push(null);
-    });
+//     (async () => {
+//       for await (const item of response.stream) {
+//         if (item.contentBlockDelta) {
+//           const text = item.contentBlockDelta.delta?.text || "";
+//           stream.push(text);
+//         }
+//       }
+//       stream.push(null); // Signal end of stream
+//     })().catch((err) => {
+//       console.error(`Stream error: ${err}`);
+//       stream.push(null);
+//     });
 
-    return new NextResponse(stream);
-  } catch (err) {
-    console.log(`ERROR: Can't invoke '${modelId}'. Reason: ${err}`);
-    return new NextResponse("Internal Server Error", { status: 500 });
-  }
-}
+//     return new NextResponse(stream);
+//   } catch (err) {
+//     console.log(`ERROR: Can't invoke '${modelId}'. Reason: ${err}`);
+//     return new NextResponse("Internal Server Error", { status: 500 });
+//   }
+// }

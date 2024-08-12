@@ -25,34 +25,18 @@ export default function Home() {
       { role: "user", content: [{text: message}] },
       { role: "assistant", content: [{text:""}] },
     ]);
+
     const response = fetch("/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify([...messages, { role: "user", content: [{text: message}] }]),
-    }).then(async (res) => {
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      return reader.read().then(function processText({ done, value }) {
-        if (done) {
-          return buffer;
-        }
-        const newText = decoder.decode(value || new Uint8Array(), {
-          stream: true,
-        });
-        setMessages((messages) => {
-          let lastMessage = messages[messages.length - 1];
-          let otherMessages = messages.slice(0, messages.length - 1);
-          return [
-            ...otherMessages,
-            { ...lastMessage, content: [{text: lastMessage.content[0].text + newText}] },
-          ];
-        });
-        return reader.read().then(processText);
-      });
     });
+    
+    const data = await response.json();
+
+    setMessages((messages) => [ ...messages, { role: "assistant", content: [{text: data}] }]);
   };
 
   return (
