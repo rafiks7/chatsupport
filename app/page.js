@@ -1,7 +1,21 @@
 "use client";
 
-import { TextField, Stack, Box, Button } from "@mui/material";
+import { TextField, Stack, Box, Button, AppBar, Toolbar, Typography } from "@mui/material";
 import { useState } from "react";
+
+function ButtonAppBar() {
+  return (
+    <AppBar position='static'>
+      <Toolbar>
+        <Box bgcolor={'lightgreen'} borderRadius={'15px'} p={2}>
+          <a href="/api/auth/logout" fontSize={'20px'} sx={{textDecoration: 'none'}}>
+            <Typography variant="h5" color='#285F39'>Logout</Typography>
+          </a>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  )
+}
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -64,6 +78,13 @@ export default function Home() {
       justifyContent="center"
       alignItems="center"
     >
+      {/* <Box>
+        <Box bgcolor={'lightgreen'} borderRadius={'15px'} p={2}>
+          <a href="/api/auth/logout" fontSize={'20px'} sx={{textDecoration: 'none'}}>
+            <Typography variant="h5" color='#285F39'>Logout</Typography>
+          </a>
+        </Box>
+      </Box> */}
       <Stack
         direction="column"
         width="500px"
@@ -83,16 +104,12 @@ export default function Home() {
             <Box
               key={index}
               display="flex"
-              justifyContent={
-                message.role === "assistant" ? "flex-start" : "flex-end"
-              }
+              justifyContent={ message.role === "assistant" ? "flex-start" : "flex-end" }
             >
               <Box
-                bgcolor={
-                  message.role === "assistant"
-                    ? "primary.main"
-                    : "secondary.main"
-                }
+                bgcolor={ message.role === "assistant" ? "success.main" : "primary.main" }
+                maxWidth={'80%'}
+                width={'auto'}
                 color="white"
                 borderRadius={16}
                 p={3}
