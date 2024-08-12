@@ -1,6 +1,6 @@
 "use client";
 
-import { TextField, Stack, Box, Button } from "@mui/material";
+import { TextField, Stack, Box, Button, Typography } from "@mui/material";
 import { useState } from "react";
 
 export default function Home() {
@@ -64,6 +64,9 @@ export default function Home() {
       justifyContent="center"
       alignItems="center"
     >
+      <Typography variant="h4" fontFamily={'Arial'} textAlign={'center'} ml={2} mr={2} mb={2}>
+          Welcome to Your <Box display={'inline'} color={'green'}>Headstarter</Box> AI Assistant
+      </Typography>
       <Stack
         direction="column"
         width="500px"
@@ -79,20 +82,17 @@ export default function Home() {
           overflow={"auto"}
           maxHeight="100%"
         >
+          
           {messages.map((message, index) => (
             <Box
               key={index}
               display="flex"
-              justifyContent={
-                message.role === "assistant" ? "flex-start" : "flex-end"
-              }
+              justifyContent={ message.role === "assistant" ? "flex-start" : "flex-end" }
             >
               <Box
-                bgcolor={
-                  message.role === "assistant"
-                    ? "primary.main"
-                    : "secondary.main"
-                }
+                bgcolor={ message.role === "assistant" ? "success.main" : "primary.main" }
+                maxWidth={'80%'}
+                width={'auto'}
                 color="white"
                 borderRadius={16}
                 p={3}
